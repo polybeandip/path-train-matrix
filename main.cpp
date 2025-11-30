@@ -1,8 +1,8 @@
 #include <led-matrix.h>
 #include <unistd.h>
 #include <signal.h>
+#include <memory>
 
-#include "xflipcanvas.h"
 #include "drawutils.h"
 
 volatile bool interrupt_received = false;
@@ -12,28 +12,29 @@ static void InterruptHandler(int) {
 
 using namespace rgb_matrix;
 
-int main(int argc, char *argv[]) {
+int main() {
   signal(SIGTERM, InterruptHandler);
   signal(SIGINT, InterruptHandler);
 
-  RGBMatrix::Options defaults;
-  defaults.hardware_mapping = "adafruit-hat";  
-  defaults.rows = 32;
-  defaults.cols = 64;
-  defaults.chain_length = 1;
-  defaults.parallel = 1;
-  defaults.show_refresh_rate = true;
+  RGBMatrix::Options opts;
+  RuntimeOptions runtime_opts;
+  opts.hardware_mapping = "adafruit-hat";  
+  opts.rows = 32;
+  opts.cols = 64;
+  opts.chain_length = 2;
 
-  Canvas* canvas = RGBMatrix::CreateFromFlags(&argc, &argv, &defaults);
-  if (canvas == NULL) return 1;
-  XFlipCanvas xflip(canvas);
+  std::unique_ptr<RGBMatrix> matrix(RGBMatrix::CreateFromOptions(opts, runtime_opts));
+  if (!matrix) return 1;
+
+  FrameCanvas* offscreen = matrix->CreateFrameCanvas();
   
-  int r = 6;
-  Color red = Color(255, 0, 0);
-  drawCircleFill(&xflip, 2 + r, 2 + r, r, red);
-  drawCircleFill(&xflip, 2 + r, (xflip.height() - 1) - (2 + r), r, red);
+  int r = 7;
+  Color red   = Color(255, 0, 0);
+  DrawCircleFill(offscreen, r, r, r, red);                             // top
+  DrawCircleFill(offscreen, r, (offscreen->height() - 1) - r, r, red); // bot
+  matrix->SwapOnVSync(offscreen);
 
   while (!interrupt_received) usleep(1 * 1000);
-
+  
   return 0;
 }
