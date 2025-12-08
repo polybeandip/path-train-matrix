@@ -1,13 +1,16 @@
 #include <led-matrix.h>
+
 #include <unistd.h>
 #include <signal.h>
 #include <memory>
+#include <functional>
 
 #include "drawutils.h"
+#include "flipframecanvas.h"
 
-volatile bool interrupt_received = false;
+volatile bool interrupt = false;
 static void InterruptHandler(int) {
-  interrupt_received = true;
+  interrupt = true;
 }
 
 using namespace rgb_matrix;
@@ -26,15 +29,15 @@ int main() {
   std::unique_ptr<RGBMatrix> matrix(RGBMatrix::CreateFromOptions(opts, runtime_opts));
   if (!matrix) return 1;
 
-  FrameCanvas* offscreen = matrix->CreateFrameCanvas();
+  std::unique_ptr<FlipFrameCanvas> flip = std::make_unique<FlipFrameCanvas>(matrix->CreateFrameCanvas(), false, true);
   
   int r = 7;
-  Color red   = Color(255, 0, 0);
-  DrawCircleFill(offscreen, r, r, r, red);                             // top
-  DrawCircleFill(offscreen, r, (offscreen->height() - 1) - r, r, red); // bot
-  matrix->SwapOnVSync(offscreen);
+  Color red = Color(255, 0, 0);
+  DrawCircleFill(flip.get(), r, r, r, red);                             // top
+  DrawCircleFill(flip.get(), r, (offscreen->height() - 1) - r, r, red); // bot
+  matrix->SwapOnVSync(flip->frame);
 
-  while (!interrupt_received) usleep(1 * 1000);
-  
+  while (!interrupt) usleep(1 * 1000);
+
   return 0;
 }
