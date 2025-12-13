@@ -18,7 +18,7 @@ class Poller {
 
     void poll();
 
-    bool interrupt = false;
+    volatile bool interrupt = false;
 
   private:
     Poller();
