@@ -1,4 +1,4 @@
-#include "poller.h"
+#include "pathpoller.h"
 #include "train.h"
 
 #include <sstream>
@@ -14,21 +14,21 @@
 
 using json = nlohmann::json;
 
-Poller& Poller::obtain() {
-  static Poller poller;
+PathPoller& PathPoller::obtain() {
+  static PathPoller poller;
 
   return poller;
 }
 
-Poller::Poller() {
+PathPoller::PathPoller() {
   curl_global_init(CURL_GLOBAL_ALL);
 }
 
-Poller::~Poller() {
+PathPoller::~PathPoller() {
   curl_global_cleanup();
 }
 
-std::vector<Train> Poller::getTrains() {
+std::vector<Train> PathPoller::getTrains() {
   std::lock_guard<std::mutex> lock(mtx);
   return trains;
 }
@@ -106,7 +106,7 @@ std::vector<Train> parseJSON(std::string serial) {
   return trains;
 }
 
-void Poller::poll() {
+void PathPoller::poll() {
   using namespace std::chrono_literals;
 
   static int count = 0;

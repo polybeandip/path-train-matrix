@@ -12,7 +12,7 @@
 #include <iostream> 
 
 #include "utils.h"
-#include "poller.h"
+#include "pathpoller.h"
 
 #define X_TRAIN_POS 15
 #define Y_TOP_POS   14
@@ -109,9 +109,9 @@ int main() {
     return 1;
   }
   
-  Poller& poller = Poller::obtain();
+  PathPoller& poller = PathPoller::obtain();
 
-  std::thread t(&Poller::poll, &poller);
+  std::thread t(&PathPoller::poll, &poller);
   
   std::optional<Train> display[2];
   while (!interrupt) {
