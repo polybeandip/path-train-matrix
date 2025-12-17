@@ -1,4 +1,4 @@
-#include "drawutils.h"
+#include "utils.h"
 
 void DrawCircleFill(rgb_matrix::Canvas* canvas,
                     int cx, int cy, int r, 
@@ -27,4 +27,10 @@ void DrawCircleFill(rgb_matrix::Canvas* canvas,
       canvas->SetPixel(cx + i, cy - x, color.r, color.g, color.b);
     }
   }
+}
+
+int StringWidth(const rgb_matrix::Font& font, const std::string& str) {
+  int total = 0;
+  for (const char& c: str) total += font.CharacterWidth(c);
+  return total;
 }

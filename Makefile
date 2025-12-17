@@ -8,7 +8,7 @@ LDFLAGS += -L$(RGB_LIBDIR) -l$(RGB_LIBRARY_NAME) -lrt -lm -lpthread -lcurl
 
 CXXFLAGS = -Wextra -Wall -O3 -std=c++20 -I$(RGB_INCDIR)
 
-EXEC_OBJS = main.o flipframecanvas.o poller.o drawutils.o
+EXEC_OBJS = main.o flipframecanvas.o poller.o utils.o
 
 path: $(EXEC_OBJS) $(RGB_LIBRARY)
 	$(CXX) $(CXXFLAGS) $(EXEC_OBJS) -o $@ $(LDFLAGS)
