@@ -7,9 +7,7 @@
 #include <chrono>
 #include <optional>
 #include <map>
-
-// temp
-#include <iostream> 
+#include <boost/log/trivial.hpp>
 
 #include "utils.h"
 #include "pathpoller.h"
@@ -21,6 +19,8 @@
 enum Level {TOP, BOT};
 
 using namespace rgb_matrix;
+
+static std::string fontpath = "roboto-tweaked.bdf";
 
 static       int   radius = 7;
 static const Color red    = Color(255, 0, 0);
@@ -104,8 +104,9 @@ int main() {
   FrameCanvas* offscreen = matrix->CreateFrameCanvas();
 
   Font font;
-  if (!font.LoadFont("roboto-tweaked.bdf")) {
-    std::cout << "ERROR LoadFont(): could't load font" << std::endl;
+  if (!font.LoadFont(fontpath.c_str())) {
+    BOOST_LOG_TRIVIAL(fatal) << "main(): could not load font "
+                             << fontpath;
     return 1;
   }
   

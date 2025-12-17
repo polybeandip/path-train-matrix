@@ -6,9 +6,7 @@
 #include <chrono>
 #include <curl/curl.h>
 #include <nlohmann/json.hpp>
-
-//temp
-#include <iostream>
+#include <boost/log/trivial.hpp>
 
 #define ADDR "https://www.panynj.gov/bin/portauthority/ridepath.json"
 
@@ -41,9 +39,9 @@ size_t mem_cb(void *contents, size_t size, size_t nmemb, void *userp) {
 
   if (serializedJSON->good()) return realsize;
   
-  std::cout << "ERROR mem_cb(): "
-            << "not enough memory (serializedJSON.good() == False)"
-            << std::endl;
+  BOOST_LOG_TRIVIAL(error) << "mem_cb(): "
+                              "not enough memory "
+                              "(serializedJSON.good() == false)";
 
   return 0; // is this right?
 }
@@ -61,9 +59,8 @@ CURLcode get(std::ostringstream& serializedJSON) {
   curl_easy_cleanup(handle);
 
   if(rc != CURLE_OK) {
-    std::cout << "ERROR curl_easy_perform(): "
-              << curl_easy_strerror(rc)
-              << std::endl;
+    BOOST_LOG_TRIVIAL(error) << "curl_easy_perform(): "
+                             << curl_easy_strerror(rc);
   }
 
   return rc;
@@ -98,9 +95,11 @@ std::vector<Train> parseJSON(std::string serial) {
     }
   }
   catch (const std::exception& e) {
-    std::cout << "ERROR parseJSON(): " 
-              << e.what() 
-              << std::endl;
+    BOOST_LOG_TRIVIAL(error) << "parseJSON(): "
+                             << e.what()
+                             << '\n'
+                             << "JSON="
+                             << serial;
   }
 
   return trains;
