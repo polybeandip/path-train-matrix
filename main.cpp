@@ -18,13 +18,15 @@
 #define Y_TOP_POS   14
 #define Y_BOT_POS   31
 
+enum Level {TOP, BOT};
+
 using namespace rgb_matrix;
 
-      int   radius = 7;
-const Color red    = Color(255, 0, 0);
-const Color white  = Color(255, 255, 255);
-const Color green  = Color(0, 255, 0);
-const Color yellow = Color(255, 255, 0);
+static       int   radius = 7;
+static const Color red    = Color(255, 0, 0);
+static const Color white  = Color(255, 255, 255);
+static const Color green  = Color(0, 255, 0);
+static const Color yellow = Color(255, 255, 0);
 
 const std::map<std::string, Color> linecolor = {
   {"World Trade Center", red}, 
@@ -37,7 +39,8 @@ static void InterruptHandler(int) {
   interrupt = true;
 }
 
-void draw(Canvas* canvas, const Font& font, /*const*/ Train& train, bool istop) {
+void draw(Canvas* canvas, const Font& font, /*const*/ Train& train, Level level)
+{
   /*const*/ std::string& head_sign = train.head_sign;
   const std::string& arrival_msg = train.arrival_msg;
   int                arrival_off = StringWidth(font, arrival_msg);
@@ -46,7 +49,7 @@ void draw(Canvas* canvas, const Font& font, /*const*/ Train& train, bool istop) 
   // dumb hack
   if (head_sign == "33rd Street via Hoboken") head_sign = "33rd Street";
 
-  if (istop) {
+  if (level == Level::TOP) {
     DrawCircleFill(canvas, radius, radius, radius, color);
     DrawText(canvas, 
              font, 
@@ -74,7 +77,7 @@ void draw(Canvas* canvas, const Font& font, /*const*/ Train& train, bool istop) 
              head_sign.c_str());
     DrawText(canvas, 
              font, 
-             canvas->width() - arrival_off + 1, 
+             canvas->width() - arrival_off + 1, // right align
              Y_BOT_POS, 
              green, 
              NULL, 
@@ -128,8 +131,10 @@ int main() {
     // draw
     if (is_new) {
       offscreen->Clear();
-      if (display[0].has_value()) draw(offscreen, font, *(display[0]), true);
-      if (display[1].has_value()) draw(offscreen, font, *(display[1]), false);
+      if (display[0].has_value()) 
+        draw(offscreen, font, *(display[0]), Level::TOP);
+      if (display[1].has_value()) 
+        draw(offscreen, font, *(display[1]), Level::BOT);
       matrix->SwapOnVSync(offscreen);
     }
 
