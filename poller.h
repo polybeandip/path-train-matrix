@@ -1,13 +1,11 @@
 #ifndef POLLER_H
 #define POLLER_H
 
-#include <array>
+#include "train.h"
+
+#include <vector>
 #include <mutex>
 #include <string>
-#include <memory>
-#include <optional>
-
-//#include "train.h"
 
 class Poller {
   public:
@@ -17,12 +15,16 @@ class Poller {
     void operator=(const Poller&) = delete;
 
     void poll();
+    std::vector<Train> getTrains();
 
     volatile bool interrupt = false;
 
   private:
     Poller();
     ~Poller();
+
+    std::vector<Train> trains;
+    std::mutex mtx;
 };
 
 #endif // POLLER_H

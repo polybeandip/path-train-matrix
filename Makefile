@@ -6,7 +6,7 @@ RGB_LIBRARY = $(RGB_LIBDIR)/lib$(RGB_LIBRARY_NAME).a
 
 LDFLAGS += -L$(RGB_LIBDIR) -l$(RGB_LIBRARY_NAME) -lrt -lm -lpthread -lcurl
 
-CXXFLAGS = -Wextra -Wall -O3 -I$(RGB_INCDIR)
+CXXFLAGS = -Wextra -Wall -O3 -std=c++20 -I$(RGB_INCDIR)
 
 EXEC_OBJS = main.o flipframecanvas.o poller.o drawutils.o
 
