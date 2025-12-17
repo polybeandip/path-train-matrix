@@ -12,7 +12,6 @@
 #include <iostream> 
 
 #include "utils.h"
-#include "flipframecanvas.h"
 #include "poller.h"
 
 #define X_TRAIN_POS 15
