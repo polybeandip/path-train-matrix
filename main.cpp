@@ -12,77 +12,108 @@
 #include "utils.h"
 #include "pathpoller.h"
 
-#define X_TRAIN_POS 15
-#define Y_TOP_POS   14
-#define Y_BOT_POS   31
+#define LAYER_VERT      15
+#define TOP_BOT_OFF     (LAYER_VERT + 2)
+#define X_TRAIN_POS     15
+#define Y_TRAIN_POS_TOP 14
 
 enum Level {TOP, BOT};
+enum Station {WTC, ThirtyThird, ThirtyThirdViaHob, IDK};
 
-using namespace rgb_matrix;
+const std::map<std::string, Station> string_to_station = {
+  {"World Trade Center", Station::WTC},
+  {"33rd Street", Station::ThirtyThird},
+  {"33rd Street via Hoboken", Station::ThirtyThirdViaHob}
+};
 
 static std::string fontpath = "roboto-tweaked.bdf";
 
-static       int   radius = 7;
-static const Color red    = Color(255, 0, 0);
-static const Color white  = Color(255, 255, 255);
-static const Color green  = Color(0, 255, 0);
-static const Color yellow = Color(255, 255, 0);
+static int large_radius = 7;
+static int small_radius = 5;
 
-const std::map<std::string, Color> linecolor = {
-  {"World Trade Center", red}, 
-  {"33rd Street", yellow},
-  {"33rd Street via Hoboken", yellow}
-};
+using namespace rgb_matrix;
+
+static const Color red    = Color(255, 0, 0);
+static const Color green  = Color(0, 255, 0);
+static const Color blue   = Color(0, 0, 255);
+static const Color yellow = Color(255, 255, 0);
+static const Color white  = Color(255, 255, 255);
 
 volatile bool interrupt = false;
 static void InterruptHandler(int) {
   interrupt = true;
 }
 
-void draw(Canvas* canvas, const Font& font, /*const*/ Train& train, Level level)
+void drawcircle(Canvas* canvas, const std::string& head_sign, int y_offset) {
+  Station station = Station::IDK;
+  if ( auto it = string_to_station.find(head_sign);
+       it != string_to_station.end() ) {
+    station = it->second;
+  }
+
+  switch (station) {
+    case Station::WTC:
+      DrawCircleFill(canvas,
+                     large_radius, large_radius + y_offset,
+                     large_radius, red);
+      break;
+    case Station::ThirtyThird:
+      DrawCircleFill(canvas,
+                     large_radius, large_radius + y_offset,
+                     large_radius, yellow);
+      break;
+    case Station::ThirtyThirdViaHob:
+      DrawCircleFill(canvas,
+                     small_radius, small_radius + y_offset,
+                     small_radius, yellow);
+      DrawCircleFill(canvas,
+                     small_radius + 4, small_radius + y_offset + 4,
+                     small_radius, blue);
+      break;
+    default:
+      DrawCircleFill(canvas,
+                     large_radius, large_radius + y_offset,
+                     large_radius, white);
+  }
+}
+
+void drawtext(Canvas* canvas, const Font& font,
+              const std::string& head_sign, const std::string& arrival_msg,
+              int y_offset) {
+  DrawText(canvas,
+           font,
+           X_TRAIN_POS,
+           Y_TRAIN_POS_TOP + y_offset,
+           white,
+           NULL,
+           head_sign.c_str());
+
+  int arrival_off = StringWidth(font, arrival_msg);
+  DrawText(canvas,
+           font,
+           canvas->width() - arrival_off + 1, // right align
+           Y_TRAIN_POS_TOP + y_offset,
+           arrival_msg == "Delay" ? red : green,
+           NULL,
+           arrival_msg.c_str());
+}
+
+void substitute(Train& train) {
+  if (train.head_sign == "33rd Street via Hoboken")
+    train.head_sign = "33rd Street via HOB";
+  if (train.arrival_msg == "0 min")
+    train.arrival_msg = "Due ";
+  if (train.arrival_msg == "Delayed")
+    train.arrival_msg = "Delay";
+}
+
+void draw(Canvas* canvas, const Font& font, Train train, Level level)
 {
-  /*const*/ std::string& head_sign = train.head_sign;
-  const std::string& arrival_msg = train.arrival_msg;
-  int                arrival_off = StringWidth(font, arrival_msg);
-  const Color&       color       = linecolor.at(head_sign);
+  int y_offset = level == Level::TOP ? 0 : TOP_BOT_OFF;
 
-  // dumb hack
-  if (head_sign == "33rd Street via Hoboken") head_sign = "33rd Street";
-
-  if (level == Level::TOP) {
-    DrawCircleFill(canvas, radius, radius, radius, color);
-    DrawText(canvas, 
-             font, 
-             X_TRAIN_POS, 
-             Y_TOP_POS, 
-             white, 
-             NULL, 
-             head_sign.c_str());
-    DrawText(canvas, 
-             font, 
-             canvas->width() - arrival_off + 1, // right align
-             Y_TOP_POS, 
-             green, 
-             NULL, 
-             arrival_msg.c_str());
-  }
-  else {
-    DrawCircleFill(canvas, radius, (canvas->height() - 1) - radius, radius, color);
-    DrawText(canvas, 
-             font, 
-             X_TRAIN_POS, 
-             Y_BOT_POS, 
-             white, 
-             NULL, 
-             head_sign.c_str());
-    DrawText(canvas, 
-             font, 
-             canvas->width() - arrival_off + 1, // right align
-             Y_BOT_POS, 
-             green, 
-             NULL, 
-             arrival_msg.c_str());
-  }
+  drawcircle(canvas, train.head_sign, y_offset);
+  substitute(train);
+  drawtext(canvas, font, train.head_sign, train.arrival_msg, y_offset);
 }
 
 int main() {
@@ -132,9 +163,9 @@ int main() {
     // draw
     if (is_new) {
       offscreen->Clear();
-      if (display[0].has_value()) 
+      if (display[0].has_value())
         draw(offscreen, font, *(display[0]), Level::TOP);
-      if (display[1].has_value()) 
+      if (display[1].has_value())
         draw(offscreen, font, *(display[1]), Level::BOT);
       matrix->SwapOnVSync(offscreen);
     }
