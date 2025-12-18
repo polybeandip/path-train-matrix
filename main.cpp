@@ -119,6 +119,8 @@ void draw(Canvas* canvas, const Font& font, Train train, Level level)
 int main() {
   using namespace std::chrono_literals;
 
+  BOOST_LOG_TRIVIAL(info) << "Turn on sign!";
+
   signal(SIGTERM, InterruptHandler);
   signal(SIGINT, InterruptHandler);
 
