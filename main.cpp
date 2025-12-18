@@ -93,7 +93,7 @@ void drawtext(Canvas* canvas, const Font& font,
            font,
            canvas->width() - arrival_off + 1, // right align
            Y_TRAIN_POS_TOP + y_offset,
-           arrival_msg == "Delay" ? red : green,
+           arrival_msg == "Late " ? red : green,
            NULL,
            arrival_msg.c_str());
 }
@@ -104,7 +104,7 @@ void substitute(Train& train) {
   if (train.arrival_msg == "0 min")
     train.arrival_msg = "Due ";
   if (train.arrival_msg == "Delayed")
-    train.arrival_msg = "Delay";
+    train.arrival_msg = "Late ";
 }
 
 void draw(Canvas* canvas, const Font& font, Train train, Level level)
