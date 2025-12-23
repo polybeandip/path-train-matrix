@@ -175,12 +175,12 @@ int main() {
       dss << "[";
       if (display[0].has_value())
         dss << *(display[0]);
-      else 
+      else
         dss << "None";
       dss << ", ";
       if (display[1].has_value())
         dss << *(display[1]);
-      else 
+      else
         dss << "None";
       dss << "]";
       BOOST_LOG_TRIVIAL(info) << "main(): display=" << dss.str();

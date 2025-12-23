@@ -1,9 +1,9 @@
 #include "train.h"
 
 Train::Train(std::string target,
-             std::string head_sign, 
-             std::string line_color, 
-             int arrival_sec, 
+             std::string head_sign,
+             std::string line_color,
+             int arrival_sec,
              std::string arrival_msg)
   : target      {target}
   , head_sign   {head_sign}
@@ -13,7 +13,7 @@ Train::Train(std::string target,
 {}
 
 std::ostream& operator<<(std::ostream& os, const Train& train) {
-  os << "{head_sign : " 
+  os << "{head_sign : "
      << train.head_sign
      << ", "
      << "arrival_msg : "

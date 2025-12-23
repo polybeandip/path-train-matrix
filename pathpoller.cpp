@@ -92,8 +92,8 @@ std::vector<Train> parseJSON(std::string serial) {
     for (const auto& msg : (*dest).at("messages")) {
       std::string sec = msg.at("secondsToArrival");
       trains.emplace_back(
-        msg.at("target"),   
-        msg.at("headSign"), 
+        msg.at("target"),
+        msg.at("headSign"),
         msg.at("lineColor"),
         std::stoi(sec),
         msg.at("arrivalTimeMessage")
@@ -113,7 +113,7 @@ void PathPoller::loop() {
   static int count = -1;
 
   while (!interrupt) {
-    std::this_thread::sleep_for(500ms); 
+    std::this_thread::sleep_for(500ms);
 
     count = (count + 1) % (2 * FREQ);
 
@@ -134,7 +134,7 @@ void PathPoller::loop() {
         
         BOOST_LOG_TRIVIAL(info) << "loop(): newtrains="
                                 << newtrains;
-        
+
         mtx.lock();
         std::swap(newtrains, trains);
         mtx.unlock();
@@ -151,8 +151,8 @@ void PathPoller::loop() {
 void PathPoller::poll() {
   BOOST_LOG_TRIVIAL(info) << "poll(): start";
 
-  try { 
-    loop(); 
+  try {
+    loop();
   }
   catch (...) {
     // do nothing.
