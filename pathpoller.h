@@ -23,6 +23,8 @@ class PathPoller {
     PathPoller();
     ~PathPoller();
 
+    void loop();
+
     std::vector<Train> trains;
     std::mutex mtx;
 };

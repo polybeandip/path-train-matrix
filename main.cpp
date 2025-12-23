@@ -7,8 +7,10 @@
 #include <chrono>
 #include <optional>
 #include <map>
+#include <sstream>
 #include <boost/log/trivial.hpp>
 
+#include "train.h"
 #include "utils.h"
 #include "pathpoller.h"
 
@@ -119,7 +121,7 @@ void draw(Canvas* canvas, const Font& font, Train train, Level level)
 int main() {
   using namespace std::chrono_literals;
 
-  BOOST_LOG_TRIVIAL(info) << "Turn on sign!";
+  BOOST_LOG_TRIVIAL(info) << "Choo Choo!";
 
   signal(SIGTERM, InterruptHandler);
   signal(SIGINT, InterruptHandler);
@@ -132,7 +134,10 @@ int main() {
   opts.chain_length = 3;
 
   std::unique_ptr<RGBMatrix> matrix(RGBMatrix::CreateFromOptions(opts, runtime_opts));
-  if (!matrix) return 1;
+  if (!matrix) {
+    BOOST_LOG_TRIVIAL(fatal) << "main(): could not init RGBMatrix";
+    return 1;
+  }
   
   FrameCanvas* offscreen = matrix->CreateFrameCanvas();
 
@@ -153,17 +158,33 @@ int main() {
     std::vector<Train> trains = poller.getTrains();
     bool is_new = false;
     for (unsigned int i = 0; i < 2; i++) {
-      is_new = is_new || i >= trains.size()
-                      || !(display[i].has_value())
-                      || *(display[i]) != trains[i];
-      if (trains.size() > i)
+      if (trains.size() > i) {
+        is_new = is_new || !(display[i].has_value())
+                        || *(display[i]) != trains[i];
         display[i] = trains[i];
-      else
+      }
+      else {
+        is_new = is_new || display[i].has_value();
         display[i] = {};
+      }
     }
 
     // draw
     if (is_new) {
+      std::ostringstream dss;
+      dss << "[";
+      if (display[0].has_value())
+        dss << *(display[0]);
+      else 
+        dss << "None";
+      dss << ", ";
+      if (display[1].has_value())
+        dss << *(display[1]);
+      else 
+        dss << "None";
+      dss << "]";
+      BOOST_LOG_TRIVIAL(info) << "main(): display=" << dss.str();
+
       offscreen->Clear();
       if (display[0].has_value())
         draw(offscreen, font, *(display[0]), Level::TOP);

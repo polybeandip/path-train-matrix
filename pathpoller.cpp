@@ -9,6 +9,7 @@
 #include <boost/log/trivial.hpp>
 
 #define ADDR "https://www.panynj.gov/bin/portauthority/ridepath.json"
+#define FREQ 10 // frequency to poll `ADDR` in seconds
 
 using json = nlohmann::json;
 
@@ -19,7 +20,13 @@ PathPoller& PathPoller::obtain() {
 }
 
 PathPoller::PathPoller() {
-  curl_global_init(CURL_GLOBAL_ALL);
+  CURLcode rc = curl_global_init(CURL_GLOBAL_ALL);
+
+  if (rc != CURLE_OK) {
+    BOOST_LOG_TRIVIAL(fatal) << "curl_global_init(): "
+                             << curl_easy_strerror(rc);
+    throw std::runtime_error("PathPoller(): curl_global_init failed");
+  }
 }
 
 PathPoller::~PathPoller() {
@@ -39,8 +46,7 @@ size_t mem_cb(void *contents, size_t size, size_t nmemb, void *userp) {
 
   if (serializedJSON->good()) return realsize;
   
-  BOOST_LOG_TRIVIAL(error) << "mem_cb(): "
-                              "not enough memory "
+  BOOST_LOG_TRIVIAL(error) << "mem_cb(): not enough memory "
                               "(serializedJSON.good() == false)";
 
   return 0; // is this right?
@@ -58,11 +64,6 @@ CURLcode get(std::ostringstream& serializedJSON) {
 
   curl_easy_cleanup(handle);
 
-  if(rc != CURLE_OK) {
-    BOOST_LOG_TRIVIAL(error) << "curl_easy_perform(): "
-                             << curl_easy_strerror(rc);
-  }
-
   return rc;
 }
 
@@ -70,63 +71,92 @@ std::vector<Train> parseJSON(std::string serial) {
   std::vector<Train> trains;
   
   try {
-    json data = json::parse(serial);
-    for (auto& station : data.at("results")) {
-      if (station.at("consideredStation") != "JSQ") continue;
+    const json data = json::parse(serial);
 
-      for (auto& dest : station.at("destinations")) {
-        if (dest.at("label") != "ToNY") continue;
-
-        for (auto& msg : dest.at("messages")) {
-          std::string sec = msg.at("secondsToArrival");
-          trains.emplace_back(
-            msg.at("target"),   
-            msg.at("headSign"), 
-            msg.at("lineColor"),
-            std::stoi(sec),
-            msg.at("arrivalTimeMessage")
-          );
-        }
-
+    const json* station = nullptr;
+    for (const auto& s : data.at("results"))
+      if (s.at("consideredStation") == "JSQ") {
+        station = &s;
         break;
       }
+    if (!station) throw std::runtime_error("no 'JSQ' station found");
 
-      break;
+    const json* dest = nullptr;
+    for (const auto& d : (*station).at("destinations"))
+      if (d.at("label") == "ToNY") {
+        dest = &d;
+        break;
+      }
+    if (!dest) throw std::runtime_error("no 'ToNY' destination found");
+
+    for (const auto& msg : (*dest).at("messages")) {
+      std::string sec = msg.at("secondsToArrival");
+      trains.emplace_back(
+        msg.at("target"),   
+        msg.at("headSign"), 
+        msg.at("lineColor"),
+        std::stoi(sec),
+        msg.at("arrivalTimeMessage")
+      );
     }
   }
   catch (const std::exception& e) {
-    BOOST_LOG_TRIVIAL(error) << "parseJSON(): "
-                             << e.what()
-                             << '\n'
-                             << "JSON="
-                             << serial;
+    BOOST_LOG_TRIVIAL(error) << "parseJSON(): " << e.what();
   }
 
   return trains;
 }
 
-void PathPoller::poll() {
+void PathPoller::loop() {
   using namespace std::chrono_literals;
 
-  static int count = 0;
+  static int count = -1;
 
   while (!interrupt) {
-    if (count == 0) {
-      std::ostringstream serializedJSON;
-      serializedJSON.str("");
-      serializedJSON.clear();
+    std::this_thread::sleep_for(500ms); 
 
-      CURLcode rc = get(serializedJSON);
-      if (rc == CURLE_OK) {
+    count = (count + 1) % (2 * FREQ);
+
+    if (count != 0) continue;
+
+    std::ostringstream serializedJSON;
+    serializedJSON.str("");
+    serializedJSON.clear();
+
+    CURLcode rc = get(serializedJSON);
+
+    switch (rc) {
+      case CURLE_OK: {
+        BOOST_LOG_TRIVIAL(info) << "loop(): JSON="
+                                << serializedJSON.str();
+
         std::vector<Train> newtrains = parseJSON(serializedJSON.str());
+        
+        BOOST_LOG_TRIVIAL(info) << "loop(): newtrains="
+                                << newtrains;
         
         mtx.lock();
         std::swap(newtrains, trains);
         mtx.unlock();
+        break;
       }
+
+      default:
+        BOOST_LOG_TRIVIAL(error) << "curl_easy_perform(): "
+                                 << curl_easy_strerror(rc);
     }
-  
-    count = (count + 1) % 60; // `count` hits 0 every 30 seconds
-    std::this_thread::sleep_for(500ms); 
   }
+}
+
+void PathPoller::poll() {
+  BOOST_LOG_TRIVIAL(info) << "poll(): start";
+
+  try { 
+    loop(); 
+  }
+  catch (...) {
+    // do nothing.
+  }
+
+  BOOST_LOG_TRIVIAL(info) << "poll(): end";
 }

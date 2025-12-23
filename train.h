@@ -2,6 +2,8 @@
 #define TRAIN_H
 
 #include <string>
+#include <ostream>
+#include <vector>
 
 struct Train {
   std::string target;
@@ -15,16 +17,15 @@ struct Train {
         std::string head_sign, 
         std::string line_color, 
         int arrival_sec, 
-        std::string arrival_msg)
-    : target      {target}
-    , head_sign   {head_sign}
-    , line_color  {line_color}
-    , arrival_sec {arrival_sec}
-    , arrival_msg {arrival_msg}
-  {}
+        std::string arrival_msg);
 
   bool operator==(const Train& other) const = default;
   bool operator!=(const Train& other) const = default;
+
+  friend std::ostream& operator<<(std::ostream& os, const Train& train);
 };
+
+std::ostream& operator<<(std::ostream& os, const Train& train);
+std::ostream& operator<<(std::ostream& os, const std::vector<Train>& trains);
 
 #endif // TRAIN_H

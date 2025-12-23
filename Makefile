@@ -8,7 +8,7 @@ RGB_LDFLAGS = -L$(RGB_LIBDIR) -l$(RGB_LIBRARY_NAME)
 LDFLAGS += $(RGB_LDFLAGS) -lrt -lm -lpthread -lcurl -lboost_log
 CXXFLAGS = -Wextra -Wall -O3 -std=c++20 -I$(RGB_INCDIR) -DBOOST_LOG_DYN_LINK
 
-EXEC_OBJS = main.o pathpoller.o utils.o
+EXEC_OBJS = main.o pathpoller.o utils.o train.o
 
 path: $(EXEC_OBJS) $(RGB_LIBRARY)
 	$(CXX) $(CXXFLAGS) $(EXEC_OBJS) -o $@ $(LDFLAGS)
